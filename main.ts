@@ -1,17 +1,25 @@
 import { Web3 } from 'web3';
 import { Web3Account } from 'web3-eth-accounts';
-import { readFile } from 'fs/promises';
+import { readFile, open } from 'fs/promises';
 import { randomBytes } from 'crypto';
 
 function make_account(web3: Web3): Web3Account {
     let account = web3.eth.accounts.create();
     return account;
 }
-function new_address(): string {
-    return "0x" + randomBytes(32).toString("hex");
+async function new_private_key(paranoid: boolean = true): Promise<string> {
+    if(paranoid) {
+        let bytes = Buffer.alloc(32);
+        await open("/dev/random", "r").then(f => f.read(bytes, 0, 32));
+        return "0x" + bytes.toString("hex");
+    }
+    else {
+        return "0x" + randomBytes(32).toString("hex");
+    }
 }
-
 async function main() {
+    let paranoid = await new_private_key();
+    let relaxed = await new_private_key(false);
     const web3 = new Web3("https://rpc.sepolia.org");
     web3.eth.accounts.create()
     // get my previously generated private keys and instantiate as accounts
