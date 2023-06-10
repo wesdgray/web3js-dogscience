@@ -1,0 +1,6 @@
+.vscode/**
+*.js*
+privatekeys
+package-lock.json
+node_modules/**
+.git
