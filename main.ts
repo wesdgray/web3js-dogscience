@@ -1,10 +1,11 @@
-import { Web3, utils} from 'web3';
-import { Web3Account, Common, TransactionFactory, TxData, TxOptions, FeeMarketEIP1559Transaction, FeeMarketEIP1559TxData, Transaction, TypedTransaction, SignTransactionResult } from 'web3-eth-accounts';
+import { Eth } from 'web3-eth';
+import type { Account as Web3Account, SignedTransaction, Transaction as TypedTransaction} from 'web3-core';
 import { readFile, open } from 'fs/promises';
 import { randomBytes } from 'crypto';
 
-function make_account(web3: Web3): Web3Account {
-    let account = web3.eth.accounts.create();
+
+function make_account(web3: Eth): Web3Account {
+    let account = web3.accounts.create();
     return account;
 }
 
@@ -21,7 +22,7 @@ async function new_private_key(paranoid: boolean = true): Promise<string> {
     }
 }
 
-async function create_tx(account1: Web3Account, account2: Web3Account, provider: Web3): Promise<TypedTransaction> {
+async function create_tx(account1: Web3Account, account2: w3a, provider: Eth): Promise<any> {
     // total fee = gas limit * (base fee + priority fee)
     // according to yellowpaper for a normal transaction, gas limit = 21,000
     // let data: FeeMarketEIP1559TxData = {
@@ -31,21 +32,19 @@ async function create_tx(account1: Web3Account, account2: Web3Account, provider:
     //     maxPriorityFeePerGas: provider.utils.toWei("0.07", "gwei"),
     //     value: provider.utils.toWei(100_000, "gwei")
     // }
-    let data: FeeMarketEIP1559TxData = {
+    let data: TypedTransaction = {
         gasLimit: 21000,
-        nonce: await provider.eth.getTransactionCount(account1.address),
+        nonce: await provider.getTransactionCount(account1.address),
         maxFeePerGas: 17000000000,
         maxPriorityFeePerGas: 70000000,
         value: 100000000000000,
-        chainId: await provider.eth.getChainId(),
+        chainId: await provider.getChainId(),
         to: account2.address
     }
-    let t = new FeeMarketEIP1559Transaction(data);
-    let tx = TransactionFactory.fromTxData(data);
-    return t;
+    return data;
 }
 
-async function sign_tx(account1: Web3Account, account2: Web3Account, provider: Web3, tx: TypedTransaction): Promise<SignTransactionResult> {
+async function sign_tx(account1: Web3Account, account2: w3a, provider: Eth, tx: TypedTransaction): Promise<SignedTransaction> {
     let signed = account1.signTransaction(tx);
     return signed
 }
@@ -53,15 +52,14 @@ async function sign_tx(account1: Web3Account, account2: Web3Account, provider: W
 async function main() {
     let paranoid = await new_private_key();
     let relaxed = await new_private_key(false);
-    const web3 = new Web3("https://rpc.sepolia.org");
-    web3.eth.accounts.sign
-    let lib_account = web3.eth.accounts.create();
+    const web3 = new Eth("https://rpc.sepolia.org");
+    let lib_account = web3.accounts.create();
     // get my previously generated private keys and instantiate as accounts
     let private_keys = await readFile("./privatekeys", "utf-8").then(a => a.split("\n").slice(0, -1));
-    let accounts = private_keys.map(k => web3.eth.accounts.privateKeyToAccount(k));
+    let accounts = private_keys.map(k => web3.accounts.privateKeyToAccount(k));
 
     // Get balance of all accounts
-    let balance_req = accounts.map(a => web3.eth.getBalance(a.address));
+    let balance_req = accounts.map(a => web3.getBalance(a.address));
     let results = await Promise.all(balance_req);
     console.log("All Account Balances");
     console.table(results);
@@ -69,12 +67,12 @@ async function main() {
     // Get some blocks and print them 
     // by number and tag
     let blocks_request = [
-        web3.eth.getBlock(0),
-        web3.eth.getBlock("earliest"),
-        web3.eth.getBlock("latest"),
-        web3.eth.getBlock("pending"),
-        web3.eth.getBlock("finalized"),
-        web3.eth.getBlock("safe")
+        web3.getBlock(0),
+        web3.getBlock("earliest"),
+        web3.getBlock("latest"),
+        web3.getBlock("pending"),
+        web3.getBlock("finalized"),
+        web3.getBlock("safe")
     ]
 
     let blocks = await Promise.all(blocks_request);
@@ -83,10 +81,18 @@ async function main() {
     //     const { number, hash } = b;
     //     return { number, hash };
     // }));
+
     let tx = await create_tx(accounts[0], accounts[1], web3); 
     console.log(tx);
     let signed = await sign_tx(accounts[0], accounts[1], web3, tx);
-
+    console.log(signed);
+    if (signed.rawTransaction) {
+        let receipt = await web3.sendSignedTransaction(signed.rawTransaction);
+        console.log(receipt);
+    }
+    else {
+        console.error("Signed transaction not well formed:\n", signed)
+    }
     let i = 0;
 }
 
