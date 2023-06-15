@@ -56,7 +56,7 @@ async function main() {
     web3.eth.accounts.create()
     // get my previously generated private keys and instantiate as accounts
     let private_keys = await readFile("./privatekeys", "utf-8").then(a => a.split("\n").slice(0, -1));
-    let accounts = private_keys.map(k => web3.eth.accounts.privateKeyToAccount(k));
+    let accounts: Web3Account[] = private_keys.map(k => web3.eth.accounts.privateKeyToAccount(k));
 
     // Get balance of all accounts
     let balance_req = accounts.map(a => web3.eth.getBalance(a.address));
@@ -66,7 +66,7 @@ async function main() {
 
     // Get some blocks and print them 
     // by number and tag
-    let blocks_request = [
+    let blocks_request: Promise<Block>[] = [
         web3.eth.getBlock(0),
         web3.eth.getBlock("earliest"),
         web3.eth.getBlock("latest"),
