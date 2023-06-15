@@ -1,4 +1,5 @@
 .vscode/**
+main.js
 *.js.*
 privatekeys
 package-lock.json

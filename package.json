@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@types/ws": "^8.5.5",
+    "typescript": "^5.1.3",
+    "web3": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.5"
+  }
+}
