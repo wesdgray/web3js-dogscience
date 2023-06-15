@@ -1,6 +1,6 @@
 import { Web3 } from 'web3';
 import { Web3Account } from 'web3-eth-accounts';
-import { readFile, open } from 'fs/promises';
+import { readFile, open, FileHandle } from 'fs/promises';
 import { randomBytes } from 'crypto';
 
 function make_account(web3: Web3): Web3Account {
@@ -8,11 +8,17 @@ function make_account(web3: Web3): Web3Account {
     return account;
 }
 async function new_private_key(paranoid: boolean = true): Promise<string> {
-    if(paranoid) {
-        let bytes = Buffer.alloc(32);
-        let file = await open("/dev/random", "r");
-        await file.read(bytes, 0, 32);
-        file.close();
+    if (paranoid) {
+        let bytes: Buffer = Buffer.alloc(32);
+        let file: FileHandle;
+        try {
+            file = await open("/dev/random", "r");
+            await file.read(bytes, 0, 32);
+        } finally {
+            if (file !== undefined) {
+                file.close();
+            }
+        }
         return "0x" + bytes.toString("hex");
     }
     else {
