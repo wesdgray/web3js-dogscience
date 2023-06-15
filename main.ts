@@ -1,12 +1,15 @@
-import { Web3 } from 'web3';
-import { Web3Account } from 'web3-eth-accounts';
+import { Block, DataFormat, FMT_BYTES, FMT_NUMBER, Numbers, Web3 } from 'web3';
+import { Web3Account, FeeMarketEIP1559TxData, TxData, TxOptions, TransactionFactory, Common } from 'web3-eth-accounts';
 import { readFile, open, FileHandle } from 'fs/promises';
 import { randomBytes } from 'crypto';
+import { getTransactionCount, getChainId } from 'web3-eth';
+import { toWei, toBigInt } from 'web3-utils';
 
 function make_account(web3: Web3): Web3Account {
     let account = web3.eth.accounts.create();
     return account;
 }
+
 async function new_private_key(paranoid: boolean = true): Promise<string> {
     if (paranoid) {
         let bytes: Buffer = Buffer.alloc(32);
@@ -23,6 +26,29 @@ async function new_private_key(paranoid: boolean = true): Promise<string> {
         return "0x" + randomBytes(32).toString("hex");
     }
 }
+
+async function create_transaction(web3: Web3, from_address: string, to_address: string, value: Numbers) {
+    let format: DataFormat = { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.UINT8ARRAY };
+    const chain_id = await getChainId(web3, format);
+    let tx_data: FeeMarketEIP1559TxData = {
+        chainId: chain_id,
+        gasLimit: 21000n,
+        maxFeePerGas: toBigInt(toWei(17, "gwei")),
+        maxPriorityFeePerGas: toBigInt(toWei(1, "gwei")),
+        to: to_address,
+        nonce: await getTransactionCount(web3, from_address, "latest", format),
+        type: 2, // no enum for this :-(
+        value: value,
+    }
+    let tx_common: Common = new Common({ chain: chain_id });
+    let tx_opts: TxOptions = {
+        common: tx_common,
+        freeze: true
+    }
+    let tx = TransactionFactory.fromTxData(tx_data, tx_opts);
+    return tx;
+}
+
 async function main() {
     let paranoid = await new_private_key();
     let relaxed = await new_private_key(false);
