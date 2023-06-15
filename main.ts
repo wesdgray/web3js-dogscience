@@ -81,7 +81,8 @@ async function main() {
     //     const { number, hash } = b;
     //     return { number, hash };
     // }));
-
+    let amount = toBigInt(toWei("0.0001", "ether"));
+    let tx = await create_transaction(web3, accounts[0].address, accounts[1].address, amount);
     let i = 0;
 }
 
