@@ -10,14 +10,12 @@ function make_account(web3: Web3): Web3Account {
 async function new_private_key(paranoid: boolean = true): Promise<string> {
     if (paranoid) {
         let bytes: Buffer = Buffer.alloc(32);
-        let file: FileHandle;
+        let file: FileHandle | undefined;
         try {
             file = await open("/dev/random", "r");
             await file.read(bytes, 0, 32);
         } finally {
-            if (file !== undefined) {
-                file.close();
-            }
+            await file?.close();
         }
         return "0x" + bytes.toString("hex");
     }
