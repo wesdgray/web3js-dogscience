@@ -1,1 +1,2 @@
-https://ethereum-goerli.publicnode.com
+# source: https://chainlist.org/chain/11155111
+https://rpc.sepolia.org	
